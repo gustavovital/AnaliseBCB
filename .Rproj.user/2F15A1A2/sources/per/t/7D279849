@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581990578931.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1116234781",
+    "id" : "7D279849",
+    "lastKnownWriteTime" : 1579323423,
+    "last_content_update" : 1579323423,
+    "path" : "/media/ragnar/Seagate Expansion Drive/tidyverse/ipca.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "174,42",
+        "scrollLine" : "151"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

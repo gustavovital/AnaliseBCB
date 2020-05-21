@@ -1,0 +1,56 @@
+# Script com o objetivo de analisar a variação do desemprego 
+# nos períodos Dilma-Bolsonaro, a partir de um ggnimate.
+# 
+# Autor: gustavovital@id.uff.br
+
+# pacotes necessarios ====
+
+require(ggplot2)
+require(dplyr)
+require(gganimate)
+require(sidrar)
+require(geobr)
+require(sf)
+
+# lendo as bases de dados ====
+
+API = '/t/4093/n1/all/n3/all/v/4099/p/all/c2/6794/d/v4099%201'
+desemprego <- get_sidra(api = API)
+brasil <- read_state(code_state="all", year=2018)
+
+# manibulação dos dados ====
+
+desemprego <- desemprego[, c(4,8,13)]
+Trimestre <- seq(as.Date('2012-01-01'), length.out = 31, by = 'quarter')
+
+desemprego$Trimestre <- Trimestre 
+colnames(desemprego) <- c('REG', 'TRI', 'VAL') 
+
+desemprego$REG <- stringr::str_to_upper(desemprego$REG)
+brasil$name_state <- stringr::str_to_upper(brasil$name_state)
+
+desemprego <- desemprego %>% 
+  filter(REG != 'BRASIL')
+
+data <-left_join(brasil, desemprego, by = c("name_state" = "REG"))
+
+# grafico animado ====
+
+br <- ggplot() +
+  geom_sf(data=data, aes(fill=VAL), size=.15) +
+  labs(title="Evolução do desemprego no Brasil: 2012-2019",
+       subtitle = ' em valores percentuais') +
+  scale_fill_gradient(name="Desemprego (%)", limits = c(0,25), low="dodgerblue2", high="tomato3") +
+  theme_void() +
+  transition_time(TRI) +
+  labs(caption = "Período: {frame_time}") +
+  theme(legend.position = 'right',
+        plot.title = element_text(size = 20, family = 'times'),
+        plot.subtitle = element_text(size = 16, family = 'times'),
+        plot.caption = element_text(size = 16, family = 'times')) 
+  
+
+gif_br <- animate(br, width = 700)
+magick::image_write(gif_br, path="desemprego_br.gif")
+  
+  

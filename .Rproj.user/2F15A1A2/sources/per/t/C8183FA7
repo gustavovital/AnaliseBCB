@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1582069570787.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1822640955",
+    "id" : "C8183FA7",
+    "lastKnownWriteTime" : 1576597568,
+    "last_content_update" : 1576597568,
+    "path" : "/media/ragnar/Seagate Expansion Drive/tidyverse/PNADC/pnadc.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "126,104",
+        "scrollLine" : "111"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

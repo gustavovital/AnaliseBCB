@@ -1,0 +1,34 @@
+# Script com o objetivo de analisar a variação do desemprego 
+# nos períodos Lula-Bolsonaro, a partir de um ggnimate.
+# 
+# Autor: gustavovital@id.uff.br
+
+# pacotes necessarios ====
+
+require(ggplot2)
+require(gganimate)
+require(sidrar)
+
+# lendo a base de dados ====
+
+API = '/t/4093/n1/all/n2/all/v/4099/p/all/c2/6794/d/v4099%201'
+desemprego <- get_sidra(api = API)
+
+# manibulação dos dados ====
+
+desemprego <- desemprego[, c(4,8,13)]
+Trimestre <- seq(as.Date('2012-01-01'), length.out = 31, by = 'quarter')
+
+desemprego$Trimestre <- Trimestre 
+colnames(desemprego) <- c('REG', 'TRI', 'VAL') 
+
+# grafico estatico ====
+
+# ggplot(subset(desemprego, TRI == '2012-01-01'), aes(x = REG, y = VAL)) +
+#   geom_col()
+  
+ggplot(desemprego, aes(x = REG, y = VAL)) +
+  geom_col(aes(fill = REG), alpha = .6) +
+  coord_flip() +
+  transition_time(TRI) +
+  labs(title = "Período: {frame_time}")

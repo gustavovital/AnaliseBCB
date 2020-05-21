@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581990531248.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "801924461",
+    "id" : "26A86C39",
+    "lastKnownWriteTime" : 1582080221,
+    "last_content_update" : 1582080221218,
+    "path" : "/media/ragnar/Seagate Expansion Drive/tidyverse/ipp.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "166,15",
+        "scrollLine" : "162",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

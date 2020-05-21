@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1590097746092.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3446348199",
+    "id" : "1B4088CA",
+    "lastKnownWriteTime" : 1578536903,
+    "last_content_update" : 1578536903,
+    "path" : "D:/Projetos/Analise BCB/read_n_corpus.R",
+    "project_path" : "read_n_corpus.R",
+    "properties" : {
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

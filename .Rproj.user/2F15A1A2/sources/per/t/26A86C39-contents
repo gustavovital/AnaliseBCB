@@ -1,0 +1,199 @@
+# script para grafico geral IPP ---- 
+# Autor: @gustavoovital
+
+# Pacotes necessários ----
+
+library(sidrar)
+library(tidyverse)
+library(tm)
+library(tidyverse)
+library(ggthemes)
+library(grid)
+library(ggforce)
+library(gganimate)
+
+# A partir do API ----
+
+API <- '/t/6903/n1/all/v/1396/p/all/c842/46610,46611,46618,46619,46620,46621,46622,46625,46626,46627,46628,46629,46633,46634,46635,46638,46641,46643,46644,46647,46650,46653,46655,46656/d/v1396%202'
+
+ipp <- get_sidra(api = API)[, c(8, 10, 13)]
+
+# acertando as base de dados ----
+
+names <- ipp$`Indústria geral, indústrias extrativas e indústrias de transformação e atividades (CNAE 2.0)`
+
+names <- ifelse(names == 'C FABRICAÇÃO DE OUTROS PRODUTOS QUÍMICOS', 'FABRICAÇÃO DE OUTROS PRODUTOS QUÍMICOS', names)
+names <- ifelse(names == 'B FABRICAÇÃO DE SABÕES DETERGENTES PRODUTOS DE LIMPEZA COSMÉTICOS PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL',
+                'FABRICAÇÃO DE SABÕES DETERGENTES PRODUTOS DE LIMPEZA COSMÉTICOS PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL', names)
+names <- ifelse(names == 'C Indústrias de Transformação', 'Indústrias de Transformação', names)
+
+names <- names %>% 
+  removePunctuation() %>% 
+  removeNumbers() %>% 
+  trimws() %>% 
+  tolower() %>% 
+  tools::toTitleCase()
+
+names <- ifelse(names == 'c Fabricação De Outros Produtos Químicos', 'Fabricação De Outros Produtos Químicos', names)
+names <- ifelse(names == 'b Fabricação De Sabões Detergentes Produtos De Limpeza Cosméticos Produtos De Perfumaria e De Higiene Pessoal', 
+                'Fabricação De Sabões Detergentes Produtos De Limpeza Cosméticos Produtos De Perfumaria e De Higiene Pessoal', names)
+
+colnames(ipp) <- c('data', 'industria', 'valor')
+ipp$industria <- names
+
+ipp %>% 
+  na.omit() %>% 
+  pivot_wider(names_from = industria, values_from = valor) -> ipp
+
+ipp$data <- seq(as.Date('2010-01-01'), length.out = nrow(ipp), by = 'm')
+
+# ipca ----
+
+api = '/t/1737/n1/all/v/63/p/first%20481/d/v63%202'
+
+ipca <- get_sidra(api = api) %>% 
+  na.omit()
+
+ipca %>% 
+  slice(361:nrow(ipca)) -> ipca
+
+data <- cbind(ipp, ipca = ipca$Valor)
+
+# função para acumular ----
+
+acum <- function(serie) {
+  
+  acum <- c()
+  acum[1] <- 1 + serie[1]/100
+  
+  for(indice in 2:length(serie)) {
+    acum[indice] <- (acum[indice - 1])*(1 + serie[indice]/100) 
+  }
+  acum <- (acum - 1)
+  return(acum)  
+}
+
+# graficos, eu acho... ----
+  
+data %>% 
+  #pivot_longer(-data, names_to = 'Industria', values_to = 'Valor') %>% 
+  select('Fabricação De Veículos Automotores Reboques e Carrocerias', 'Fabricação De Produtos Alimentícios', 'Fabricação De Bebidas', 'Fabricação De Produtos Do Fumo',
+         'Fabricação De Produtos Têxteis', 'Metalurgia', 'Impressão e Reprodução De Gravações', 
+         'Fabricação De Coque De Produtos Derivados Do Petróleo e De Biocombustíveis' , 'Fabricação De Equipamentos De Informática Produtos Eletrônicos e Ópticos', 
+         'Fabricação De Produtos Farmoquímicos e Farmacêuticos', 'Fabricação De Máquinas Aparelhos e Materiais Elétricos', 'data') -> data
+  
+data$`Veículos Automotores` <- acum(data$`Fabricação De Veículos Automotores Reboques e Carrocerias`) 
+data$`Produtos Alimentícios`<- acum(data$`Fabricação De Produtos Alimentícios`)
+data$`Bebidas`<- acum(data$`Fabricação De Bebidas`)
+data$`Fumo`<- acum(data$`Fabricação De Produtos Do Fumo`)
+data$`Produtos Têxteis`<- acum(data$`Fabricação De Produtos Têxteis`)
+data$Metalurgia<- acum(data$Metalurgia)
+data$`Impressão e Reprodução de Gravações`<- acum(data$`Impressão e Reprodução De Gravações`)
+data$`Derivados Do Petróleo e de Biocombustíveis`<- acum(data$`Fabricação De Coque De Produtos Derivados Do Petróleo e De Biocombustíveis`)
+data$`Informática, Produtos Eletrônicos e Ópticos`<- acum(data$`Fabricação De Equipamentos De Informática Produtos Eletrônicos e Ópticos`)
+data$`Produtos Farmoquímicos e Farmacêuticos`<- acum(data$`Fabricação De Produtos Farmoquímicos e Farmacêuticos`)
+data$`Máquinas, Aparelhos e Materiais Elétricos`<- acum(data$`Fabricação De Máquinas Aparelhos e Materiais Elétricos`)
+
+data <- data[,-c(1:11)]
+
+data %>% 
+  pivot_longer(-data, names_to = 'Industria', values_to = 'Valor') -> data
+
+g <- data %>% 
+  ggplot(aes(x = data, y = Valor, colour = Industria, label = Industria)) +
+  # geom_hline(yintercept = tail(acum(ipca$Valor), 1)) +
+  geom_segment(aes(x=as.Date('2010-01-01'), xend=as.Date('2019-12-01'),y=tail(acum(ipca$Valor), 1),
+                   yend=tail(acum(ipca$Valor), 1)), size = 2, colour = 'black') +
+  geom_line(show.legend = FALSE, size = 2) +
+  geom_text(aes(x = as.Date('2020-01-01')), hjust = 0, family = 'Bookman', size = 5) +
+  
+  scale_y_continuous(labels = scales::percent) +
+  
+  scale_x_date(limits = c(as.Date('2010-01-01'), as.Date('2023-01-01')), date_breaks = '5 year', labels=scales::date_format("%Y")) +
+  scale_colour_manual(values = c('red','tomato3','tomato2',"dodgerblue3", 'dodgerblue2', 'dodgerblue4', 'darkred', 'darkblue', 'tomato3',
+                                 'dodgerblue2')) +
+  labs(title = expression(bold('Variação Acumulada do IPP')~'(2010-2020)'),
+       subtitle = 'Comparação dos Componentes com o IPCA Acumulado',
+       x = NULL, y = NULL,
+       caption = 'Fonte: SIDRA/IBGE\nElaboração: @gustavoovital') +
+  annotation_custom(grob = textGrob(paste(sep = '', 'IPCA Acumulado ','(', round(100*tail(acum(ipca$Valor), 1), 2), '%)' ),
+                                    gp=gpar(fontsize=16, col="black", fontface="bold")),  xmin = as.Date('2010-01-01'), 
+                    ymin = tail(acum(ipca$Valor), 1) + .1, ymax = tail(acum(ipca$Valor), 1) + .03,
+                    as.Date('2015-01-01')) +
+  theme_minimal() +
+  theme(legend.position = 'none',
+        text = element_text(family = 'Bookman'),
+        plot.title = element_text(size = 25, colour = 'darkred'),
+        plot.subtitle = element_text(size = 18, colour = 'darkblue'),
+        plot.caption = element_text(size = 18, colour = 'dodgerblue4'),
+        axis.text = element_text(size = 16)) +
+  transition_reveal(data)
+  
+gif <- animate(g, width = 1300, fps = 10, height = 600)  
+magick::image_write(gif, path="gif_ipp.gif")  
+
+                                                                                                   
+  # [2] "Indústrias De Transformação"                                                                                
+# [3] "Fabricação De Produtos Alimentícios"                                                                        
+# [4] "Fabricação De Bebidas"                                                                                      
+# [5] "Fabricação De Produtos Do Fumo"                                                                             
+# [6] "Fabricação De Produtos Têxteis"                                                                             
+# [7] "Confecção De Artigos Do Vestuário e Acessórios"                                                             
+# [8] "Preparação De Couros e Fabricação De Artefatos De Couro Artigos Para Viagem e Calçados"                     
+# [9] "Fabricação De Produtos De Madeira"                                                                          
+# [10] "Fabricação De Celulose Papel e Produtos De Papel"                                                           
+# [11] "Impressão e Reprodução De Gravações"                                                                        
+# [12] "Fabricação De Coque De Produtos Derivados Do Petróleo e De Biocombustíveis"                                 
+# [13] "Fabricação De Outros Produtos Químicos"                                                                     
+# [14] "Fabricação De Sabões Detergentes Produtos De Limpeza Cosméticos Produtos De Perfumaria e De Higiene Pessoal"
+# [15] "Fabricação De Produtos Farmoquímicos e Farmacêuticos"                                                       
+# [16] "Fabricação De Produtos De Borracha e De Material Plástico"                                                  
+# [17] "Fabricação De Produtos De Minerais Não Metálicos"                                                           
+# [18] "Metalurgia"                                                                                                 
+# [19] "Fabricação De Produtos De Metal Exceto Máquinas e Equipamentos"                                             
+# [20] "Fabricação De Equipamentos De Informática Produtos Eletrônicos e Ópticos"                                   
+# [21] "Fabricação De Máquinas Aparelhos e Materiais Elétricos"                                                     
+# [22] "Fabricação De Máquinas e Equipamentos"                                                                      
+# [23] "Fabricação De Veículos Automotores Reboques e Carrocerias"                                                  
+# [24] "Fabricação De Outros Equipamentos De Transporte Exceto Veículos Automotores"                                
+# [25] "Fabricação De Móveis"                                                                                       
+# [26] "ipca"      
+
+# histogram ----
+
+data <- cbind(ipp, ipca = ipca$Valor)
+m <- matrix(ncol = (ncol(data)-1), nrow = 120)  
+
+for( i in 1:ncol(m)) {
+  m[, i] <- acum(data[, i + 1])
+}  
+
+names <- colnames(data)  
+data_clean <- data.frame(data = data$data, m)
+colnames(data_clean) <- names
+
+data_clean %>% 
+  pivot_longer(-data, names_to = 'Industria', values_to = 'Valor') %>% 
+  filter(data == as.Date('2019-12-01')) %>% 
+  ggplot(aes(x = reorder(Industria, Valor), y = Valor, fill = Industria)) +
+  geom_col(show.legend = FALSE, alpha = .5, colour = 'black', size = .5) +
+  scale_fill_manual(values = c('dodgerblue3','tomato3','darkblue','darkred','lightblue','dodgerblue3','dodgerblue2','tomato4',
+                               'red','dodgerblue4','darkred','lightblue','darkblue','dodgerblue2','darkblue', 'red','blue','tomato3',
+                               'dodgerblue2','dodgerblue4','blue','dodgerblue2','black','dodgerblue2','dodgerblue3')) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = expression(bold('Variação Acumulada do IPP')~'(2010-2020)'),
+       subtitle = 'Comparação dos Componentes com o IPCA Acumulado',
+       x = NULL, y = NULL,
+       caption = 'Fonte: SIDRA/IBGE\nElaboração: @gustavoovital') +
+  geom_text(aes(label = paste(round(Valor,4)*100, '%')), position=position_stack(vjust = 0.5), vjust=0.5, size = 3.5, family = 'Bookman') +
+  theme_solarized_2() +
+  theme(plot.title.position = 'plot',
+        text = element_text(colour = 'black', size = 13, family = 'bold'),
+        plot.title = element_text(size = 30, colour = 'gray20'),
+        plot.subtitle = element_text(size = 20, colour = 'gray20'),
+        plot.caption = element_text(size = 20, colour = 'gray20'),
+        axis.text.y = element_text(size = 15))
+
+
+

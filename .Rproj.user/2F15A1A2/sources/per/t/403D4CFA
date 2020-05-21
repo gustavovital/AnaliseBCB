@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1582055220264.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3093777640",
+    "id" : "403D4CFA",
+    "lastKnownWriteTime" : 1574923210,
+    "last_content_update" : 1574923210,
+    "path" : "/media/ragnar/Seagate Expansion Drive/tidyverse/Gganimate/desemprego.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "22,30",
+        "scrollLine" : "1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

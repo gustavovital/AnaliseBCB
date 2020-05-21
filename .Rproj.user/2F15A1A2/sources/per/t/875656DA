@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1582055521386.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2838257679",
+    "id" : "875656DA",
+    "lastKnownWriteTime" : 1574738277,
+    "last_content_update" : 1582065623950,
+    "path" : "/media/ragnar/Seagate Expansion Drive/tidyverse/Gganimate/desemprego_brasil.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "49,64",
+        "scrollLine" : "15"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
