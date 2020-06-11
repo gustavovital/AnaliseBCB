@@ -11,114 +11,50 @@ rm(list = ls())
 
 corpus <- readRDS('corpus.rds')
 
-# Pacotes necessários ----
+# Pacotes necessários e source ----
 
 library(tidyverse)
 library(tidytext)
-library(tm)
 library(qdap)
-library(stringi)
-library(RWeka)
-library(ggthemes)
-library(ggwordcloud)
-library(extrafont)
-loadfonts(device = "win")
+library(wordcloud)
 
-# Criando uma função para a limpeza do corpus ----
+source('Sources/main.R')
 
-create_corpus <- function(corpus){ 
-  # o objetivo é inicial é remover as pontuações e passar todos 
-  # os caracteres para minusculo, considerando o corpus um conjunto de questoes pre
-  # definidas. Aplicaremos um stopwords e removeremos espaçamentos extras.
+# Analise de palavras ----
+
+corpus %>% 
+  unnest_tokens(Palavra, text, token = "ngrams", n = 1) %>% 
+  mutate(Palavra = if_else(Palavra %in% c("price", "prices"), "price", Palavra)) %>% 
+  mutate(Palavra = if_else(Palavra %in% c("increase", "increased"), "increase", Palavra)) %>% 
+  mutate(Palavra = if_else(Palavra %in% c("market", "markets"), "market", Palavra)) %>% 
   
-  corpus <- DataframeSource(corpus)
-  corpus <- VCorpus(corpus)
+  filter(!Palavra %in% StopWords) %>%
+  count(Palavra, sort = TRUE) %>% 
+  arrange(desc(n)) -> vetor_palavras
+
+
+# Analise de termos ----
+
+corpus %>% 
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>% 
+  separate(bigram, c('Termo1', 'Termo2'), sep = ' ') %>% 
   
-  corpus <- tm_map(corpus, content_transformer(tolower))
-  corpus <- tm_map(corpus, removePunctuation)
-  corpus <- tm_map(corpus, removeNumbers)
-  corpus <- tm_map(corpus, removeWords, words = c(stop_words$word,
-                                                  'month', 'months', 'monthly', 'year', 'years', 'million', 'billion', 'adjusted', 'brazil', 'head', 'department', 'twelve',
-                                                  'january', 'february', 'deputy', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 
-                                                  'yearoveryear', 'threemonth', 'monthonmonth', 'trimmedmean', 'seasonally', 'index', 'pp', 'pm', 'pa', 'means', 'secondround',
-                                                  'governor'))
-  corpus <- tm_map(corpus, stripWhitespace)
+  mutate(Termo1 = if_else(Termo1 %in% c("price", "prices"), "price", Termo1)) %>% 
+  mutate(Termo2 = if_else(Termo2 %in% c("price", "prices"), "price", Termo2)) %>% 
   
-  return(corpus)
-}
+  filter(!Termo1 %in% StopWords) %>%
+  filter(!Termo2 %in% StopWords) %>% 
+  arrange(desc(n)) %>% 
+  mutate(Termos = paste(Termo1, Termo2)) %>% 
+  count(Termos, sort = TRUE) %>% 
+  select(Termos, n) -> vetor_termos
 
-# corpus limpo ----
+# Nuvens de Palavras ----
 
-corpus_clean <- create_corpus(corpus)
-
-# Analise de Termos ----
-
-tokenizar <- function(char) {
-  NGramTokenizer(char, Weka_control(min = 2, max = 2))
-} 
-
-analise_termos <- TermDocumentMatrix(corpus_clean, list(tokenize = tokenizar)) 
-analise_termos_matrix <- as.matrix(analise_termos) 
-
-# Meirelles ----
-
-analise_meirelles <- analise_termos_matrix[, 1:76] %>% 
-  rowSums() %>% 
-  sort(decreasing = TRUE) %>% 
-  head(25)
-
-analise_meirelles <- tibble(word = names(analise_meirelles),
-                                     n = analise_meirelles)
-
-# Tombini ----
-
-analise_tombini <- analise_termos_matrix[, 77:121] %>% 
-  rowSums() %>% 
-  sort(decreasing = TRUE) %>% 
-  head(25)
-
-analise_tombini <- tibble(word = names(analise_tombini),
-                                   n = analise_tombini)
-
-# Goldfajn ----
-
-analise_goldfajn <- analise_termos_matrix[, 122:140] %>% 
-  rowSums() %>% 
-  sort(decreasing = TRUE) %>% 
-  head(25)
-
-analise_goldfajn <- tibble(word = names(analise_goldfajn),
-                                    n = analise_goldfajn)
-
-# Uniao dos dados ----
-
-analise_meirelles$periodo <- 'Meirelles'
-analise_tombini$periodo <- 'Tombini'
-analise_goldfajn$periodo <- 'Goldfajn'
-
-df_termos <- rbind(analise_meirelles, analise_tombini, analise_goldfajn)
-df_termos$periodo <- factor(df_termos$periodo, levels = c('Meirelles', 'Tombini', 'Goldfajn'))
-
-# Gráfico I ----
-
-df_termos %>% 
-  ggplot(aes(reorder(word, n), n)) +
-  geom_col(fill = 'gray60', colour = 'gray30', alpha = .5) +
-  facet_wrap(~ periodo, scales = 'free') +
-  coord_flip() +
-  
-  labs(x = NULL, y = 'Contagem dos termos',
-       title = 'Comparação dos Termos mais Utilizados de Acordo com o Período dos Minutes do COPOM',
-       subtitle = 'períodos de 2003 à 2018 - gestão Meirelles à gestão Goldfajn', caption = 'Fonte: BCB\nElaboração: @gustavoovital') +
-  theme_solarized_2() +
-  theme(text = element_text(family = "Palatino Linotype"),
-        plot.title = element_text(size = 25),
-        plot.title.position = 'plot',
-        plot.subtitle = element_text(size = 22),
-        axis.text.y = element_text(size = 12),
-        axis.text.x = element_text(size = 12),
-        axis.title.x = element_text(size = 20),
-        plot.caption = element_text(size = 15))
+wordcloud(words = vetor_palavras$Palavra, freq = vetor_palavras$n, min.freq = 1,  
+          max.words=200, random.order=FALSE, rot.per=0.10,   
+          colors=viridis::inferno(16, direction = -1))
 
 # Analise de palavras ----
 
